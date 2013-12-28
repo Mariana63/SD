@@ -18,17 +18,17 @@ public class Projeto {
     private String _designacao;
     private String _descricao;
     private float _fTotal;
-    private BufferedReader _codigo;
+    private int _codigo;
     private boolean _update = false;
     private float _fAtual;
     private TreeMap<String,Float> _colaboradores;
     
-    public Projeto(Utilizador u, String des, String dc, float fin) throws FileNotFoundException{
+    public Projeto(Utilizador u, String des, String dc, float fin, int cod) throws FileNotFoundException{
         _utilizador = u;
         _designacao = des;
         _descricao = dc;
         _fTotal = fin;
-        _codigo = new BufferedReader(new FileReader("d:/inicio.txt"));
+        _codigo = cod;
         _fAtual = 0;
         _colaboradores = new TreeMap<>();
     }
@@ -67,12 +67,12 @@ public class Projeto {
         return _fTotal;
     }
     
-    public BufferedReader getCod(){
+    public int getCod(){
         return _codigo;
     }
     
-    public void setCod(String path) throws FileNotFoundException{
-        _codigo =new BufferedReader(new FileReader("d:/inicio.txt"));
+    public void setCod(int cod) throws FileNotFoundException{
+        _codigo = cod;
     }
     
     public boolean getUpdate(){
@@ -163,26 +163,5 @@ public class Projeto {
         return result;
     }
     
-    public boolean compareCodigo(BufferedReader cod){
-        boolean result = false;
-        ArrayList<String> list1 = new ArrayList<>();
-        ArrayList<String> list2 = new ArrayList<>();
-        String line;
-        try {
-            line = _codigo.readLine();
-            while(line != null)
-                list1.add(line);
-            _codigo.close();
-            line = cod.readLine();
-            while(line != null)
-                list2.add(line);
-            cod.close();
-            list1.containsAll(list2);
-            
-        } catch (IOException ex) {
-            Logger.getLogger(Projeto.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        return result;
-    }
   
 }

@@ -19,7 +19,7 @@ public class Projeto {
     private String _descricao;
     private float _fTotal;
     private int _codigo;
-    private boolean _update = false;
+    private boolean _update;
     private float _fAtual;
     private TreeMap<String,Float> _colaboradores;
     
@@ -30,6 +30,7 @@ public class Projeto {
         _fTotal = fin;
         _codigo = cod;
         _fAtual = 0;
+        _update = false;
         _colaboradores = new TreeMap<>();
     }
     
@@ -75,24 +76,31 @@ public class Projeto {
         _codigo = cod;
     }
     
-    public boolean getUpdate(){
+    public synchronized boolean getUpdate(){
         return _update;
     }
     
-    public void setTrue(){
+    public synchronized void setTrue(){
         _update = true;
+    }
+    
+    public synchronized void setFalse(){
+        _update = false;
     }
     
     public synchronized float getFinAtual(){
         return _fAtual;
     }
     
-    public TreeMap<String,Float> getColaboradores(){
+    public synchronized TreeMap<String,Float> getColaboradores(){
         TreeMap<String,Float> result = new TreeMap<>();
-        synchronized(_colaboradores){
             result.putAll(_colaboradores);
-        }
         return result;
+    }
+    
+    public synchronized void setColaboradores(TreeMap<String,Float> res){
+        _colaboradores.clear();
+        _colaboradores.putAll(res);
     }
     
     public ArrayList<String> getColaboradoresName(){
@@ -121,7 +129,7 @@ public class Projeto {
         s.append("Financiamento Atual: ").append(_fAtual).append("\n");
         synchronized(_colaboradores){
             for(String u : _colaboradores.keySet()){
-                s.append("Utilizador: ").append(u).append("\n");
+                s.append("Utilizador: ").append(u).append("Contribuição").append(_colaboradores.get(u)).append("\n");
             }
         }
         return s.toString();

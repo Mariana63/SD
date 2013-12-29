@@ -3,25 +3,26 @@ package kickstater;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.net.Socket;
-import java.util.ArrayList;
+import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ServerThread extends Thread{
     Socket socket;
     Utilizador user = null;
-    private TreeMap<String,Projeto> _lProjetos;
+    private Random rand;
+    private TreeMap<Integer,Projeto> _lProjetos;
     private TreeMap<String,Utilizador> _lUtilizadores;
     private BufferedReader input;
     private PrintWriter output;
+    
+    
     
     ServerThread(Socket sock){
         this.socket=sock;
@@ -40,35 +41,35 @@ public class ServerThread extends Thread{
         return ((user != null) && (user.getPass().equals(aPassword)));
     }
     
-    public void login(){
-        try {
-            input = getSocketReader(this.socket);
-            String line = input.readLine();
-            String[] parse = line.split("\u0020");
-            if (parse.length == 3) {
-                String Comando = parse[0];
-                loginArgs(parse[1],parse[2]);
-            }else   
-                output.println("login <username> <password>\n");
-            
-        } catch (IOException ex) {
-            Logger.getLogger(ServerThread.class.getName()).log(Level.SEVERE, null, ex);
-        }
-      
+    public void registar(String username, String pass){
+        Utilizador p = null;
+        p.setUsername(username);
+        p.setPass(pass);
+        _lUtilizadores.put(username, p);
+        if (p != null){
+            output.println("Registado com Sucesso");
+        }else   output.println("Username já usado");
     }
+    
     
     public void submeterP(String desig, String desc, float fin){
         try {
-            Projeto p = new Projeto(user,desig,desc,fin);
+            int code = rand.nextInt(100);
+            while (_lProjetos.keySet().contains(code));
+            Projeto p = new Projeto(user,desig,desc,fin,code);
             synchronized(p){
-            while(p.getUpdate() == false){
+            while(p.getFinAtual() < p.getFinTotal()){
+            while(p.getUpdate() == false ){
                 try {
                     p.wait();
-                    output.println("Finaciamento Atual é de "+p.getFinAtual());
+                    output.println("Finaciamento Atual é de "+p.getFinAtual()+"\n");
                 } catch (InterruptedException ex) {
                     Logger.getLogger(ServerThread.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
+             p.setFalse();
+            }
+            output.println("Projeto Financiado \n");
                 
             }
         } catch (FileNotFoundException ex) {
@@ -81,92 +82,89 @@ public class ServerThread extends Thread{
     
     
     
-    public float financiarArgs(String path, float financ) throws FileNotFoundException{
-        BufferedReader cod = new BufferedReader(new FileReader(path));
-        float restante = 0;
-        boolean comp = false;
-        synchronized(_lProjetos){
-            for(Projeto p : _lProjetos.values()){
-                synchronized(p){
-                    comp=p.compareCodigo(cod);
-                if(comp == true){
-                    p.addColaborador(user.getUserName(),financ);
-                    p.aumentaFin(financ);
-                    p.setTrue();
-                    p.notifyAll();
-                    restante = p.getFinAtual() - financ;
+    public void financiarArgs(int code, float financ) throws FileNotFoundException{
+        Projeto p;
+        float res, restante;
+        for(Integer c : _lProjetos.keySet()){
+                synchronized(_lProjetos){
+                if(c == code){
+                        p = _lProjetos.get(c);
+                        synchronized(p){
+                            if(p.getFinAtual() < p.getFinTotal()){
+                            res = p.getFinAtual() + financ;
+                            restante = p.getFinTotal() - p.getFinAtual();
+                            if (res > p.getFinTotal() ){
+                                output.println("O valor" +financ + "ultrapassa o valor total de financiamento" +p.getFinTotal());
+                                p.aumentaFin(restante);
+                                output.println("O valor financiado foi de "+restante);
+                            }
+                            else{
+                                p.aumentaFin(financ);
+                            }
+                            p.addColaborador(user.getUserName(),financ);
+                            p.setTrue();
+                            p.notifyAll();
+                            }
+                            else    output.println("Projeto já financiado totalmente \n");
+                        }
                     }
                 }
             }
-            
-        }
-        
-        return restante;
     }
     
 
-    public TreeSet<Projeto> listaNaoFin(String chave){
-        TreeSet<Projeto> result = new TreeSet<>();
+    public void listaNaoFin(String chave){
         synchronized(_lProjetos){
             for(Projeto p : _lProjetos.values()){
                 synchronized(p){
                     if(p.getDescricao().contains(chave)){
                         if(p.getFinAtual() < p.getFinTotal() )
-                            result.add(p.clone());
+                            output.println("Codigo : "+ p.getCod() + "  Designação : "+p.getDesig());
                     }
                 }
                 
             }
         }
-        return result;
     }
     
-    public TreeSet<Projeto> listaFin(String chave){
-        TreeSet<Projeto> result = new TreeSet<>();
+    public void listaFin(String chave){
         synchronized(_lProjetos){
             for(Projeto p : _lProjetos.values()){
                 synchronized(p){
                     if(p.getDescricao().contains(chave)){
                         if(p.getFinAtual() < p.getFinTotal() )
-                            result.add(p.clone());
+                            output.println(p.toString());
                     }
                 }
             }
         }
-        return result;
     }
     
-    public void informacao(BufferedReader cod, int N){
-        boolean comp = false;
+    public void informacao(int cod, int N){
         Projeto pr = null;
-        float fact;
         TreeMap<String,Float> cola;
         cola = new TreeMap<>();
-        String desig, desc;
-        synchronized(_lProjetos){
-            for(Projeto p : _lProjetos.values()){
+
+        for(Projeto p : _lProjetos.values()){
+            synchronized(_lProjetos){
                 synchronized(p){
-                    comp = p.compareCodigo(cod);
-                    if (comp) {
+                    if (cod == p.getCod()) {
                         pr = p.clone();
                     }
                     }
                 }
             }
         if(pr != null){
-               desig = pr.getDesig();
-               desc = pr.getDescricao();
-               fact = pr.getFinAtual();
-               cola = pr.getColaboradores();
-               System.out.println(desig);
-               System.out.println(desc);
-               System.out.println(fact);
                cola=pr.top(N);
-               System.out.println(cola.toString());
+               pr.setColaboradores(cola);
+               output.println(pr.toString());
         }
-        else    System.out.println("Projeto não encontrado");
+        else   output.println("Projeto não encontrado");
     }
     
+    public void help(){
+        output.println("");
+    }
     
     
     @Override
@@ -177,8 +175,14 @@ public class ServerThread extends Thread{
             String[] parse = line.split("\u0020");
             String comando = parse[0];
             switch(comando){
+                case ("registar"):
+                    registar(parse[1],parse[2]);
+                    break;
                 case ("login"):  
                     loginArgs(parse[1],parse[2]);
+                    break;
+                case ("encerrar"):
+                    socket.close();
                     break;
             }
             

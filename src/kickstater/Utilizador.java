@@ -31,6 +31,15 @@ public class Utilizador {
         return _password;
     }
     
+    public void setUsername(String user){
+        _username = user;
+    }
+    
+    
+    public void setPass(String pass){
+        _password = pass;
+    }
+    
     
     @Override
     public boolean equals(Object obs){

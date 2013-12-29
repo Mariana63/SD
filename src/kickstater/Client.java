@@ -23,7 +23,7 @@ public class Client {
         try (Socket client = new Socket("localhost",Servidor.PORT)) {
             BufferedReader input = getSocketReader(client);
             PrintWriter output = getSocketWriter(client);
-            
+            client.close();
         }
        
     }

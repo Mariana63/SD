@@ -78,15 +78,23 @@ public class ServerThread extends Thread{
             //while (_lProjetos.keySet().contains(code));
             
             Projeto p = new Projeto(user,desig,desc,fin,code);
-            //synchronized(p){
-            while(p.getFinAtual() < p.getFinTotal()){
-                _lProjetos.put(p.getCod(), p.clone());
-                p.espera();
-                p.setFalse();
+            _lProjetos.put(p.getCod(), p);
+            synchronized(p){
+                while(p.getFinAtual() < p.getFinTotal() ){
+                try {
+                    System.out.println("wait");
+                    p.wait();
+                    System.out.println("continua");
+                    output.println("Financiamento actual: "+p.getFinAtual());
+                    output.flush();
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(ServerThread.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
-            output.println("Projeto Financiado \n");
+                output.println("Projeto Financiado \n");
+                output.flush();
                 
-            //}
+            }
         } catch (FileNotFoundException ex) {
             Logger.getLogger(ServerThread.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -97,7 +105,7 @@ public class ServerThread extends Thread{
     
     
     
-    public synchronized void financiarArgs(int code, float financ) throws FileNotFoundException{
+    public void financiarArgs(int code, float financ) throws FileNotFoundException{
         Projeto p;
         float res, restante;
         for(Integer c : _lProjetos.keySet()){
@@ -105,7 +113,6 @@ public class ServerThread extends Thread{
                 if(c == code){
                         p = _lProjetos.get(c);
                         synchronized(p){
-                            System.out.println("FINANCIAR");
                             if(p.getFinAtual() < p.getFinTotal()){
                                 res = p.getFinAtual() + financ;
                                 restante = p.getFinTotal() - p.getFinAtual();
@@ -121,10 +128,10 @@ public class ServerThread extends Thread{
                                 p.aumentaFin(financ);
                             }
                             p.addColaborador(user.getUserName(),financ);
-                            p.notifica();
                             output.println("financiamento completo");
                             output.flush();
-                            System.out.println("FINANCIAR2222");
+                            System.out.println(p.getFinAtual());
+                            p.notifyAll();
                             }
                             else {   
                                 output.println("Projeto já financiado totalmente \n");
@@ -132,6 +139,7 @@ public class ServerThread extends Thread{
                             }
                             
                         }
+                      
                     }
                 //}
             }
@@ -142,7 +150,6 @@ public class ServerThread extends Thread{
         //synchronized(_lProjetos){
         boolean b;
         b = _lProjetos.isEmpty();
-        System.out.println(b);
              if(b == true){
                  output.println("Não existem projetos");
                  output.flush();
@@ -174,7 +181,7 @@ public class ServerThread extends Thread{
             for(Projeto p : _lProjetos.values()){
                 synchronized(p){
                     if(p.getDescricao().contains(chave)){
-                        if(p.getFinAtual() < p.getFinTotal() ){
+                        if(p.getFinAtual() == p.getFinTotal() ){
                             output.println("Codigo : "+ p.getCod() + "  Designação : "+p.getDesig());
                             output.flush();
                         }
@@ -203,8 +210,12 @@ public class ServerThread extends Thread{
                cola=pr.top(N);
                pr.setColaboradores(cola);
                output.println(pr.toString());
+               output.flush();
         }
-        else   output.println("Projeto não encontrado");
+        else   {
+            output.println("Projeto não encontrado");
+            output.flush();
+        }
     }
     
     public void help(){

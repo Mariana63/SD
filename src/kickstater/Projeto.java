@@ -139,13 +139,15 @@ public class Projeto {
         _fAtual+=f;
     }
     
-    public synchronized void notifica(){
-        this.setTrue();
-        notifyAll();
+    public void notifica(){
+        synchronized(this){
+            notify();
+        }
     }
     
-    public synchronized void espera() throws InterruptedException{
-            while(this.getUpdate() == false ){
+    public void espera() throws InterruptedException{
+        synchronized(this){
+             while(this.getFinAtual() < this.getFinTotal() ){
                 try {
                     System.out.println("wait");
                     wait();
@@ -154,6 +156,8 @@ public class Projeto {
                     Logger.getLogger(ServerThread.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
+        }
+           
     }
     
     public synchronized void addColaborador(String username, float financ){

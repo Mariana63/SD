@@ -9,6 +9,8 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.lang.String;
 import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class Client {
      
@@ -23,19 +25,32 @@ public class Client {
     public static void main(String[] args) throws IOException {
         try (Socket client = new Socket("localhost",Servidor.PORT)) {
             
-            String line, rec;
-            BufferedReader input = getSocketReader(client);
+            String line;
+            final BufferedReader input = getSocketReader(client);
             PrintWriter output = getSocketWriter(client);
             while(true){
             Scanner sc = new Scanner(System.in);
             line = sc.nextLine();
             output.println(line);
             output.flush();
-            rec = input.readLine();
-            while(rec != null){
-                System.out.println(rec);
-                break;
-            }
+            new Thread(new Runnable(){
+
+                @Override
+                public void run() {
+                    String rec;
+                    while(client.isConnected()){
+                        try {
+                            rec = input.readLine();
+                                System.out.println(rec);
+                        } catch (IOException ex) {
+                            Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                         
+                         }
+                }
+                    
+                }).start();
+            
             }
             //output.close();
             //input.close();

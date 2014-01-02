@@ -24,8 +24,18 @@ public class ServerThread extends Thread{
     
     
     
-    ServerThread(Socket sock){
+    ServerThread(Socket sock, TreeMap<Integer,Projeto> p , TreeMap<String,Utilizador> u){
         this.socket=sock;
+        _lUtilizadores = u;
+        _lProjetos = p;
+        rand = new Random();
+        try {
+            input = getSocketReader(sock);
+            output = getSocketWriter(sock);
+        } catch (IOException ex) {
+            Logger.getLogger(ServerThread.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
     }
     
     private static BufferedReader getSocketReader(Socket client) throws IOException {
@@ -36,42 +46,47 @@ public class ServerThread extends Thread{
         return new PrintWriter(new OutputStreamWriter(client.getOutputStream()));
     }
     
-    public synchronized boolean loginArgs(String aUsername, String aPassword){
+    public void loginArgs(String aUsername, String aPassword){
         user = _lUtilizadores.get(aUsername);
-        return ((user != null) && (user.getPass().equals(aPassword)));
+        if((user != null) && (user.getPass().equals(aPassword))){
+            
+            output.println("login efetuado com Sucesso");
+            output.flush();
+            }
+        else{
+                output.println("login efetuado sem Sucesso");
+                output.flush();
+                }    
     }
     
     public void registar(String username, String pass){
-        Utilizador p = null;
-        p.setUsername(username);
-        p.setPass(pass);
+        Utilizador p = new Utilizador(username,pass);
         _lUtilizadores.put(username, p);
-        if (p != null){
+        if (p.getUserName().length() != 0){
             output.println("Registado com Sucesso");
-        }else   output.println("Username já usado");
+            output.flush();
+        }else{
+            output.println("Username já usado");
+            output.flush();
+        }
     }
     
     
-    public void submeterP(String desig, String desc, float fin){
+    public void submeterP(String desig, String desc, float fin) throws FileNotFoundException, InterruptedException{
         try {
             int code = rand.nextInt(100);
-            while (_lProjetos.keySet().contains(code));
+            //while (_lProjetos.keySet().contains(code));
+            
             Projeto p = new Projeto(user,desig,desc,fin,code);
-            synchronized(p){
+            //synchronized(p){
             while(p.getFinAtual() < p.getFinTotal()){
-            while(p.getUpdate() == false ){
-                try {
-                    p.wait();
-                    output.println("Finaciamento Atual é de "+p.getFinAtual()+"\n");
-                } catch (InterruptedException ex) {
-                    Logger.getLogger(ServerThread.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }
-             p.setFalse();
+                _lProjetos.put(p.getCod(), p.clone());
+                p.espera();
+                p.setFalse();
             }
             output.println("Projeto Financiado \n");
                 
-            }
+            //}
         } catch (FileNotFoundException ex) {
             Logger.getLogger(ServerThread.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -82,61 +97,91 @@ public class ServerThread extends Thread{
     
     
     
-    public void financiarArgs(int code, float financ) throws FileNotFoundException{
+    public synchronized void financiarArgs(int code, float financ) throws FileNotFoundException{
         Projeto p;
         float res, restante;
         for(Integer c : _lProjetos.keySet()){
-                synchronized(_lProjetos){
+                //synchronized(_lProjetos){
                 if(c == code){
                         p = _lProjetos.get(c);
                         synchronized(p){
+                            System.out.println("FINANCIAR");
                             if(p.getFinAtual() < p.getFinTotal()){
-                            res = p.getFinAtual() + financ;
-                            restante = p.getFinTotal() - p.getFinAtual();
+                                res = p.getFinAtual() + financ;
+                                restante = p.getFinTotal() - p.getFinAtual();
                             if (res > p.getFinTotal() ){
-                                output.println("O valor" +financ + "ultrapassa o valor total de financiamento" +p.getFinTotal());
+                                output.println("O valor " +financ + " ultrapassa o valor total de financiamento " +p.getFinTotal());
+                                output.flush();
                                 p.aumentaFin(restante);
                                 output.println("O valor financiado foi de "+restante);
+                                output.flush();
                             }
+                            
                             else{
                                 p.aumentaFin(financ);
                             }
                             p.addColaborador(user.getUserName(),financ);
-                            p.setTrue();
-                            p.notifyAll();
+                            p.notifica();
+                            output.println("financiamento completo");
+                            output.flush();
+                            System.out.println("FINANCIAR2222");
                             }
-                            else    output.println("Projeto já financiado totalmente \n");
+                            else {   
+                                output.println("Projeto já financiado totalmente \n");
+                                output.flush();
+                            }
+                            
                         }
                     }
-                }
+                //}
             }
     }
     
 
     public void listaNaoFin(String chave){
-        synchronized(_lProjetos){
-            for(Projeto p : _lProjetos.values()){
-                synchronized(p){
-                    if(p.getDescricao().contains(chave)){
-                        if(p.getFinAtual() < p.getFinTotal() )
-                            output.println("Codigo : "+ p.getCod() + "  Designação : "+p.getDesig());
-                    }
-                }
-                
-            }
+        //synchronized(_lProjetos){
+        boolean b;
+        b = _lProjetos.isEmpty();
+        System.out.println(b);
+             if(b == true){
+                 output.println("Não existem projetos");
+                 output.flush();
+             }
+             else {
+                 for(Projeto p : _lProjetos.values()){
+                     synchronized(p){
+                         if(p.getDescricao().contains(chave)){
+                             if(p.getFinAtual() < p.getFinTotal() ){
+                                 output.println("Codigo : "+ p.getCod() + "  Designação : "+p.getDesig());
+                                 output.flush();
+                         }
+                         }
+                     }
+                     
+                 }
         }
+        //}
     }
     
     public void listaFin(String chave){
-        synchronized(_lProjetos){
+        
+        //synchronized(_lProjetos){
+            if(_lProjetos.isEmpty()){
+                output.println("Não existem projetos");
+                output.flush();
+            }
+            else{
             for(Projeto p : _lProjetos.values()){
                 synchronized(p){
                     if(p.getDescricao().contains(chave)){
-                        if(p.getFinAtual() < p.getFinTotal() )
-                            output.println(p.toString());
+                        if(p.getFinAtual() < p.getFinTotal() ){
+                            output.println("Codigo : "+ p.getCod() + "  Designação : "+p.getDesig());
+                            output.flush();
+                        }
                     }
                 }
             }
+        //}
         }
     }
     
@@ -170,23 +215,48 @@ public class ServerThread extends Thread{
     @Override
     public void run(){
         try {
-            input = getSocketReader(this.socket);
-            String line = input.readLine();
-            String[] parse = line.split("\u0020");
-            String comando = parse[0];
-            switch(comando){
-                case ("registar"):
-                    registar(parse[1],parse[2]);
-                    break;
-                case ("login"):  
-                    loginArgs(parse[1],parse[2]);
-                    break;
-                case ("encerrar"):
-                    socket.close();
-                    break;
+            input = getSocketReader(socket);
+            while(socket.isConnected()){
+                String line = input.readLine();
+                //while(line != null){
+                    String[] parse = line.split("\u0020");
+                String comando = parse[0];
+                switch(comando){
+                    case ("registar"):
+                        registar(parse[1],parse[2]);
+                        break;
+                    case ("login"):  
+                        loginArgs(parse[1],parse[2]);
+                        break;
+                    case ("submeterProjeto"):  
+                        submeterP(parse[1],parse[2],Float.valueOf(parse[3]));
+                        break;
+                    case ("Financiar"):  
+                        financiarArgs(Integer.valueOf(parse[1]),Integer.valueOf(parse[2]));
+                        break;
+                    case ("LNaoFin"):  
+                        listaNaoFin(parse[1]);
+                        break;
+                    case ("LFin"):  
+                        listaFin(parse[1]);
+                        break;
+                    case ("Informacao"):  
+                        informacao(Integer.valueOf(parse[1]),Integer.valueOf(parse[2]));
+                        break;
+                    case ("encerrar"):
+                        socket.close();
+                        break;
+                    default:
+                        output.println("Comando errado");
+                        output.flush();
+                        break;
+                //}
+                }
+                
+                
             }
             
-        } catch (IOException ex) {
+        } catch (IOException | InterruptedException ex) {
             Logger.getLogger(ServerThread.class.getName()).log(Level.SEVERE, null, ex);
         }
             

@@ -9,6 +9,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.TreeMap;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -19,9 +22,10 @@ public class Projeto {
     private String _descricao;
     private float _fTotal;
     private int _codigo;
-    private boolean _update;
     private float _fAtual;
     private TreeMap<String,Float> _colaboradores;
+    private Lock lock = new ReentrantLock();
+    private Condition cond = lock.newCondition();
     
     public Projeto(Utilizador u, String des, String dc, float fin, int cod) throws FileNotFoundException{
         _utilizador = u;
@@ -30,7 +34,6 @@ public class Projeto {
         _fTotal = fin;
         _codigo = cod;
         _fAtual = 0;
-        _update = false;
         _colaboradores = new TreeMap<>();
     }
     
@@ -76,40 +79,27 @@ public class Projeto {
         _codigo = cod;
     }
     
-    public synchronized boolean getUpdate(){
-        return _update;
-    }
     
-    public synchronized void setTrue(){
-        _update = true;
-    }
-    
-    public synchronized void setFalse(){
-        _update = false;
-    }
-    
-    public synchronized float getFinAtual(){
+    public float getFinAtual(){
         return _fAtual;
     }
     
-    public synchronized TreeMap<String,Float> getColaboradores(){
+    public TreeMap<String,Float> getColaboradores(){
         TreeMap<String,Float> result = new TreeMap<>();
             result.putAll(_colaboradores);
         return result;
     }
     
-    public synchronized void setColaboradores(TreeMap<String,Float> res){
+    public void setColaboradores(TreeMap<String,Float> res){
         _colaboradores.clear();
         _colaboradores.putAll(res);
     }
     
     public ArrayList<String> getColaboradoresName(){
         ArrayList<String> result = new ArrayList<>();
-        synchronized(_colaboradores){
             for(String u : _colaboradores.keySet()){
                 result.add(u);
             }
-        }
         return result;
     }
 
@@ -129,38 +119,18 @@ public class Projeto {
         s.append("Financiamento Atual: ").append(_fAtual).append("\n");
         synchronized(_colaboradores){
             for(String u : _colaboradores.keySet()){
-                s.append("Utilizador: ").append(u).append("Contribuição").append(_colaboradores.get(u)).append("\n");
+                s.append("Utilizador: ").append(u).append(" Contribuição: ").append(_colaboradores.get(u)).append("\n");
             }
         }
         return s.toString();
     }
     
-    public synchronized void aumentaFin(float f){
+    public void aumentaFin(float f){
         _fAtual+=f;
     }
+
     
-    public void notifica(){
-        synchronized(this){
-            notify();
-        }
-    }
-    
-    public void espera() throws InterruptedException{
-        synchronized(this){
-             while(this.getFinAtual() < this.getFinTotal() ){
-                try {
-                    System.out.println("wait");
-                    wait();
-                    System.out.println("continua");
-                } catch (InterruptedException ex) {
-                    Logger.getLogger(ServerThread.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }
-        }
-           
-    }
-    
-    public synchronized void addColaborador(String username, float financ){
+    public void addColaborador(String username, float financ){
         _colaboradores.put(username, financ);
     }
     
@@ -170,23 +140,18 @@ public class Projeto {
         Float value;
         List<String> aux1;
         List<Float> aux2;
-        synchronized(_colaboradores){
             aux1 = new ArrayList<>(_colaboradores.keySet());
             aux2 = new ArrayList<>(_colaboradores.values());
-        }
         Collections.sort(aux2,new FloatComparator());
         if(N != 0){
             for(int i=0 ; i < N ; i++){
                 value = aux2.get(i);
                 for(String s : aux1){
-                    synchronized(_colaboradores){
                         if(_colaboradores.get(s) == value )
                             result.put(s, value);
                     }
                     
                 }
-                
-            }
         }
         else    result = (TreeMap<String, Float>) _colaboradores.clone();
         return result;

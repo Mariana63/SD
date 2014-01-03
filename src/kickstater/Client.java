@@ -7,58 +7,85 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.lang.String;
 import java.util.Scanner;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class Client {
+    
      
-    private static BufferedReader getSocketReader(Socket client) throws IOException {
-        return new BufferedReader(new InputStreamReader(client.getInputStream()));
+    private static BufferedReader getSocketReader(Socket client){
+        try {
+            return new BufferedReader(new InputStreamReader(client.getInputStream()));
+        } catch (IOException ex) {
+            System.err.println(ex);
+        }
+        return null;
     }
  
-    private static PrintWriter getSocketWriter(Socket client) throws IOException {
-        return new PrintWriter(new OutputStreamWriter(client.getOutputStream()));
+    private static PrintWriter getSocketWriter(Socket client) {
+        try {
+            return new PrintWriter(new OutputStreamWriter(client.getOutputStream()));
+        } catch (IOException ex) {
+            System.err.println(ex);
+        }
+        return null;
     }
     
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args){
         try (Socket client = new Socket("localhost",Servidor.PORT)) {
             
             String line;
             final BufferedReader input = getSocketReader(client);
             PrintWriter output = getSocketWriter(client);
-            while(true){
+            System.out.println("escreva help para saber os comandos ");
+            while(!client.isClosed()){
             Scanner sc = new Scanner(System.in);
             line = sc.nextLine();
             output.println(line);
+            
             output.flush();
+            
+            if(line.equals("logout") || line.equals("encerrarTudo") )
+                break;
+            
             new Thread(new Runnable(){
-
-                @Override
-                public void run() {
-                    String rec;
-                    while(client.isConnected()){
+                    public volatile boolean flag = true;
+    
+                    public void killThread(){
+                        flag = false;
+                    }
+                    @Override
+                    public void run() {
                         try {
-                            rec = input.readLine();
-                                System.out.println(rec);
+                            String rec;
+                            while(flag){
+                                try {
+                                    rec = input.readLine();
+                                    if(rec == null){
+                                        killThread();
+                                    }
+                                    else
+                                        System.out.println(rec);
+                                } catch (IOException ex) {
+                                    System.err.println(ex);
+                                }
+                                
+                            }
+                            input.close();
+                            
                         } catch (IOException ex) {
-                            Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
+                            System.err.println(ex);
                         }
-                         
-                         }
-                }
+                    }
                     
                 }).start();
-            
             }
-            //output.close();
-            //input.close();
-            //client.close();
-            
-            
+            output.close();
+            client.close();
+            System.exit(0);
+        } catch (IOException ex) {
+            System.err.println(ex);
         }
-       
+        
     }
     
 }

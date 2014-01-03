@@ -19,28 +19,37 @@ public class Servidor {
     
     
     
-    private void runServer() throws IOException {
-        ServerSocket serverSocket = new ServerSocket(PORT);
-        TreeMap<Integer,Projeto> p = new TreeMap<>();
-        TreeMap<String,Utilizador> u = new TreeMap<>();
-        final Lock l1 = new ReentrantLock();
-        final Lock l2 = new ReentrantLock();
-        final Lock l3 = new ReentrantLock();
-        Condition cond = l1.newCondition();
-        System.out.println("Server up & ready for connections...\n");
-        while(true){
-            Socket socket = serverSocket.accept();
-            new ServerThread(socket,p,u,l1,l2,l3,cond).start();
+    private void runServer() {
+        ServerSocket serverSocket = null;
+        try {
+            serverSocket = new ServerSocket(PORT);
+            TreeMap<Integer,Projeto> p = new TreeMap<>();
+            TreeMap<String,Utilizador> u = new TreeMap<>();
+            final Lock l1 = new ReentrantLock();
+            final Lock l2 = new ReentrantLock();
+            final Lock l3 = new ReentrantLock();
+            Condition cond = l1.newCondition();
+            System.out.println("Servidor Pronto para novas conexões.... \n");
+            while(true){
+                Socket socket = serverSocket.accept();
+                new ServerThread(socket,p,u,l1,l2,l3,cond).start();
+            }
+            } catch (IOException ex) {
+                Logger.getLogger(Servidor.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        finally{
+            try {
+                serverSocket.close();
+            } catch (IOException ex) {
+                Logger.getLogger(Servidor.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
+        
         
     }
     
     public static void main(String[] args) {
-        try {
-            new Servidor().runServer();
-        } catch (IOException ex) {
-            Logger.getLogger(Servidor.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        new Servidor().runServer();
     }
 
     

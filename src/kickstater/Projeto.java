@@ -1,31 +1,21 @@
 
 package kickstater;
 
-import java.io.BufferedReader;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.TreeMap;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 
 public class Projeto {
     private final Utilizador _utilizador;
     private String _designacao;
     private String _descricao;
-    private float _fTotal;
+    private final float _fTotal;
     private int _codigo;
     private float _fAtual;
     private TreeMap<String,Float> _colaboradores;
-    private Lock lock = new ReentrantLock();
-    private Condition cond = lock.newCondition();
     
     public Projeto(Utilizador u, String des, String dc, float fin, int cod) throws FileNotFoundException{
         _utilizador = u;
@@ -156,6 +146,5 @@ public class Projeto {
         else    result = (TreeMap<String, Float>) _colaboradores.clone();
         return result;
     }
-    
-  
+
 }

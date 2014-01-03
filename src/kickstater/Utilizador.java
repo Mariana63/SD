@@ -18,6 +18,11 @@ public class Utilizador {
         _password = p;
     }
     
+    public Utilizador(){
+        _username = "";
+        _password = "";
+    }
+    
     public Utilizador(Utilizador u){
         _username = u.getUserName();
         _password = u.getPass();

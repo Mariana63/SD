@@ -348,13 +348,15 @@ public class ServerThread extends Thread{
     public void run(){
         try{
         input = getSocketReader(socket);
-        while(!socket.isClosed()){
+        while(!socket.isClosed() && socket.isConnected()){
             String line = null;
             try {
                 line = input.readLine();
             } catch (IOException ex) {
                 System.err.println(ex);
             }
+            if (line == null)
+                break;
             String[] parse = line.split("\u0020");
             String comando = parse[0];
             switch(comando){

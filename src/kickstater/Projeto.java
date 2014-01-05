@@ -150,7 +150,7 @@ public class Projeto {
                     
                 }
         }
-        else    result = (TreeMap<String, Float>) _colaboradores;
+        else    result = _colaboradores;
         return result;
     }
 

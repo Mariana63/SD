@@ -44,7 +44,7 @@ public class Client {
             
             output.flush();
             
-            if(line.equals("logout") || line.equals("encerrarTudo") )
+            if(line.equals("logout") || line.equals("encerrarS") )
                 break;
             
             new Thread(new Runnable(){
@@ -84,6 +84,7 @@ public class Client {
             System.exit(0);
         } catch (IOException ex) {
             System.err.println(ex);
+            //System.exit(0);
         }
         
     }

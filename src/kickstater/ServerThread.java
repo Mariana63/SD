@@ -352,7 +352,7 @@ public class ServerThread extends Thread{
         output.println("Lista de projetos já totalmente financiados : LF <palavra chave>");
         output.println("Informação sobre o projeto : informacao <codigo do projeto> <n de colaboradores>");
         output.println("Encerrar cliente : logout");
-        output.println("Encerrar cliente e servidor : encerrarTudo");
+        output.println("Encerrar cliente e servidor : encerrarS");
         output.flush();
     }
     
@@ -473,7 +473,7 @@ public class ServerThread extends Thread{
                         output.flush();
                     }
                     break;
-                case ("encerrarTudo"):
+                case ("encerrarS"):
                     if (parse.length == 1){
                         closeConnection();
                         System.exit(0);

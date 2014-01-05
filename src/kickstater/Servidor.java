@@ -5,6 +5,7 @@ package kickstater;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.TreeMap;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -25,14 +26,16 @@ public class Servidor {
             serverSocket = new ServerSocket(PORT);
             TreeMap<Integer,Projeto> p = new TreeMap<>();
             TreeMap<String,Utilizador> u = new TreeMap<>();
+            ArrayList<String> login = new ArrayList<>();
             final Lock l1 = new ReentrantLock();
             final Lock l2 = new ReentrantLock();
             final Lock l3 = new ReentrantLock();
+            final Lock l4 = new ReentrantLock();
             Condition cond = l1.newCondition();
             System.out.println("Servidor Pronto para novas conexões.... \n");
             while(true){
                 Socket socket = serverSocket.accept();
-                new ServerThread(socket,p,u,l1,l2,l3,cond).start();
+                new ServerThread(socket,p,u,login,l1,l2,l3,l4,cond).start();
             }
             } catch (IOException ex) {
                 Logger.getLogger(Servidor.class.getName()).log(Level.SEVERE, null, ex);

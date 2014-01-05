@@ -107,10 +107,9 @@ public class Projeto {
         s.append("Descrição: ").append(_descricao).append("\n");
         s.append("Financiamento Requerido: ").append(_fTotal).append("\n");
         s.append("Financiamento Atual: ").append(_fAtual).append("\n");
-        synchronized(_colaboradores){
-            for(String u : _colaboradores.keySet()){
-                s.append("Utilizador: ").append(u).append(" Contribuição: ").append(_colaboradores.get(u)).append("\n");
-            }
+        s.append("Colaboradores :\n");
+        for(String u : _colaboradores.keySet()){
+            s.append("Utilizador: ").append(u).append(" Contribuição: ").append(_colaboradores.get(u)).append("\n");
         }
         return s.toString();
     }

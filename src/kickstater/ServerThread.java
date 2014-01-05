@@ -9,6 +9,7 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.TreeMap;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -22,22 +23,26 @@ public class ServerThread extends Thread{
     private Random rand;
     private TreeMap<Integer,Projeto> _lProjetos;
     private TreeMap<String,Utilizador> _lUtilizadores;
+    private ArrayList<String> _login;
     private BufferedReader input;
     private PrintWriter output;
     private Lock lock1 = new ReentrantLock();
     private Lock lock2 = new ReentrantLock();
     private Lock lock3 = new ReentrantLock();
+    private Lock lock4 = new ReentrantLock();
     private Condition cond = lock1.newCondition();
     
     
     
-    ServerThread(Socket sock, TreeMap<Integer,Projeto> p , TreeMap<String,Utilizador> u, Lock l1, Lock l2, Lock l3, Condition c){
+    ServerThread(Socket sock, TreeMap<Integer,Projeto> p , TreeMap<String,Utilizador> u, ArrayList<String> log, Lock l1, Lock l2, Lock l3,Lock l4, Condition c){
         this.socket=sock;
         _lUtilizadores = u;
         _lProjetos = p;
+        _login = log;
         lock1 = l1;
         lock2 = l2;
         lock3 = l3;
+        lock4 = l4;
         cond = c;
         rand = new Random();
         input = getSocketReader(sock);
@@ -63,6 +68,27 @@ public class ServerThread extends Thread{
         return null;
     }
     
+    public void addlogin(String username){
+        lock4.lock();
+        boolean c = false;
+        try{
+            c = _login.contains(username);
+        }
+        finally{
+            lock4.unlock();
+        }
+        if(c == true){
+                user = new Utilizador();
+                output.println("login já efetuado");
+                output.flush();
+            }
+        else{
+            _login.add(username);
+            output.println("login efetuado com Sucesso");
+            output.flush();
+        }
+    }
+    
     public void login(String aUsername, String aPassword){
         lock2.lock();
         try{
@@ -74,32 +100,46 @@ public class ServerThread extends Thread{
         
         if((user != null) && (user.getPass().equals(aPassword))){
             
-            output.println("login efetuado com Sucesso");
-            output.flush();
+            addlogin(user.getUserName());
             }
         else{
-                output.println("login efetuado sem Sucesso");
+                output.println("Precisa dwe registar-se primeiro");
                 output.flush();
                 }    
     }
     
+    
+    
     public void registar(String username, String pass){
-        Utilizador p = new Utilizador(username,pass);
+        Utilizador ut;
+        Utilizador u = new Utilizador(username,pass);
         lock2.lock();
         try{
-            _lUtilizadores.put(username, p);
+            ut = _lUtilizadores.get(username);
+            
         }
         finally{
             lock2.unlock();
         }
-        
-        if (p.getUserName().length() != 0){
+        if(ut != null){
+                output.println("Username já usado");
+                output.println("Registe-se novamente");
+                output.flush();
+            }
+        else{
+            lock2.lock();
+            try{
+                _lUtilizadores.put(username, u);
+            }
+            finally{
+                lock2.unlock();
+            }
+                
             output.println("Registado com Sucesso");
             output.flush();
-        }else{
-            output.println("Username já usado");
-            output.flush();
-        }
+            
+            }
+
     }
     
     
@@ -198,29 +238,33 @@ public class ServerThread extends Thread{
         lock3.lock();
         try{
             b = _lProjetos.isEmpty();
-            if(b == false){
+            if(b != false){
+                output.println("Não existem projetos");
+                output.flush();
+            }
+            else{
                 for(Projeto p : _lProjetos.values()){
                     lock1.lock();
                     try{
                         if(p.getDescricao().contains(chave)){
-                             if(p.getFinAtual() < p.getFinTotal() ){
-                                 output.println("Codigo : "+ p.getCod() + "  Designação : "+p.getDesig());
-                                 output.flush();
-                               }
-                         }
+                            if(p.getFinAtual() < p.getFinTotal() ){
+                                output.println("Codigo : "+ p.getCod() + "  Designação : "+p.getDesig());
+                                output.flush();
+                            }
+                            else{
+                                output.println("Projeto já financiado");
+                                output.flush();
+                            }
+                        }
                         else{
-                            output.println("Não existem projetos");
+                            output.println("Não existem projetos com a chave fornecida");
                             output.flush();
                         }
                     }
                     finally{
                         lock1.unlock();
                     }
-                }    
-            }
-            else{
-                output.println("Não existem projetos");
-                output.flush();
+                }
             }
         }
         finally{
@@ -235,29 +279,33 @@ public class ServerThread extends Thread{
         lock3.lock();
         try{
             b = _lProjetos.isEmpty();
-            if(b == false){
+            if(b != false){
+                output.println("Não existem projetos");
+                output.flush();
+            }
+            else{
                 for(Projeto p : _lProjetos.values()){
                     lock1.lock();
                     try{
                         if(p.getDescricao().contains(chave)){
-                             if(p.getFinAtual() == p.getFinTotal() ){
-                                 output.println("Codigo : "+ p.getCod() + "  Designação : "+p.getDesig());
-                                 output.flush();
-                               }
-                         }
+                            if(p.getFinAtual() == p.getFinTotal() ){
+                                output.println("Codigo : "+ p.getCod() + "  Designação : "+p.getDesig());
+                                output.flush();
+                            }
+                            else{
+                            output.println("Projeto ainda nao totalmente financiado");
+                            output.flush();
+                            }
+                        }
                         else{
-                            output.println("Não existem projetos");
+                            output.println("Não existem projetos com a chave fornecida");
                             output.flush();
                         }
                     }
                     finally{
                         lock1.unlock();
                     }
-                }    
-            }
-            else{
-                output.println("Não existem projetos");
-                output.flush();
+                }
             }
         }
         finally{
@@ -348,6 +396,7 @@ public class ServerThread extends Thread{
     public void run(){
         try{
         input = getSocketReader(socket);
+        System.out.println("Um Cliente ligou-se ao servidor");
         while(!socket.isClosed() && socket.isConnected()){
             String line = null;
             try {

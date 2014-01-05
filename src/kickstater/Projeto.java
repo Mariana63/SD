@@ -150,7 +150,7 @@ public class Projeto {
                     
                 }
         }
-        else    result = (TreeMap<String, Float>) _colaboradores.clone();
+        else    result = (TreeMap<String, Float>) _colaboradores;
         return result;
     }
 

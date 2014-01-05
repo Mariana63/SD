@@ -80,7 +80,6 @@ public class Client {
                 }).start();
             }
             output.close();
-            client.close();
             System.exit(0);
         } catch (IOException ex) {
             System.err.println(ex);

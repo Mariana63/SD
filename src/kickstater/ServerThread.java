@@ -484,7 +484,8 @@ public class ServerThread extends Thread{
                         output.println("Numero de argumentos errado");
                         output.flush();
                     }
-                    case ("logout"):
+                    break;
+                case ("logout"):
                     if (parse.length == 1){
                         closeConnection();
                         

@@ -168,6 +168,7 @@ public class ServerThread extends Thread{
                         output.flush();
                         cond.await();
                         output.println("Atualizado");
+                        output.flush();
                         output.println("Financiamento actual: "+p.getFinAtual());
                         output.flush();
                     } catch (InterruptedException ex) {
@@ -217,7 +218,7 @@ public class ServerThread extends Thread{
                     }
                     p.addColaborador(user.getUserName(),financ);
                     cond.signalAll();
-                    output.println("financiamento completo");
+                    output.println("Operação bem sucedida");
                     output.flush();
                     }
                     else {   

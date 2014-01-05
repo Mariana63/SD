@@ -120,6 +120,14 @@ public class Projeto {
 
     
     public void addColaborador(String username, float financ){
+        float f = 0;
+        if(!_colaboradores.isEmpty()){
+        for(String s : _colaboradores.keySet()){
+            if(s.equals(username))
+                f =_colaboradores.get(s);
+                financ = financ + f ;
+        }
+        }
         _colaboradores.put(username, financ);
     }
     

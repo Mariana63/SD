@@ -358,7 +358,7 @@ public class ServerThread extends Thread{
     
     private void closeConnection() { 
         try {
-              
+            _login.remove(user.getUserName());
             socket.shutdownInput();  
             socket.shutdownOutput();  
             socket.close();
